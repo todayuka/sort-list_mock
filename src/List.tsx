@@ -180,10 +180,12 @@ export const List = () => {
               {item.subCategory && (
                 <span>
                   <Button
-                    className="bg-red-600"
+                    className={
+                      openItems.has(item.order) ? "bg-purple-600" : "bg-red-600"
+                    }
                     onClick={handleOpenSub(item.order)}
                   >
-                    toggle
+                    {openItems.has(item.order) ? "close" : "open"}
                   </Button>
                 </span>
               )}
