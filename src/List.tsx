@@ -3,32 +3,41 @@ import { Button } from "./components/ui/button";
 import { MouseEventHandler, useState } from "react";
 
 export const List = () => {
+  // アコーディオンが開いてるアイテム
   const [openItems, setOpenItems] = useState<Set<number>>(new Set());
+  // ソートボタン
   const [sortable, setSortable] = useState<boolean>(false);
+  // 掴んでるリストのid
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
+  // ドラッグ領域(掴んでるリストの親要素)のid
   const [draggedParentId, setDraggedParentId] = useState<number | null>(null);
   const [listOrder, setListOrder] = useState(ListData);
   const [dragEnterId, setDragEnterId] = useState<number | null>(null);
   const [inputValues, setInputValues] = useState<Record<number, string>>(
+    // inputの値 -> ListDataのorderの値を文字列で保存
     ListData.reduce((acc, item) => {
-      // 入力値を文字列で保存
       acc[item.order] = String(item.order);
       if (item.subCategory) {
         item.subCategory.forEach((sub) => {
-          // サブカテゴリの入力値も保存
+          // サブカテゴリのorderの値も保存
           acc[sub.order] = String(sub.order);
         });
       }
       return acc;
+      // ↓ex.){1:"1" }※初期値は空
     }, {} as Record<number, string>)
   );
 
-  // アコーディオン
+  // アコーディオンの制御
   const handleOpenSub = (id: number): MouseEventHandler<HTMLButtonElement> => {
+    // 以下関数が発火
     return () => {
       setOpenItems((prevOpenItems) => {
         const newOpenItems = new Set(prevOpenItems);
+        // idが付与されていないリストはid(＝orderの値)を内部的に付与/既にある場合は削除
+        // -> JSX上でidの有無でUIを制御
         newOpenItems.has(id) ? newOpenItems.delete(id) : newOpenItems.add(id);
+        // 現在開いているアコーディオン項目のidのSetオブジェクト(×not配列)
         return newOpenItems;
       });
     };
@@ -63,7 +72,7 @@ export const List = () => {
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    //同じドラッグ領域の要素に重なった時に.ringを追加
+    //同じドラッグ領域の要素に重なった時に.ringクラスを追加
     if (dragEnterParentId === draggedParentId) {
       setDragEnterId(enterId);
     } else {
@@ -82,6 +91,7 @@ export const List = () => {
     if (draggedItemId === null || draggedParentId !== dropParentId) return;
 
     const updatedOrder = [...listOrder];
+    const updatedOpenItems = new Set(openItems);
 
     if (dropParentId === null) {
       const draggedIndex = updatedOrder.findIndex(
@@ -92,9 +102,16 @@ export const List = () => {
       const [draggedItem] = updatedOrder.splice(draggedIndex, 1);
       updatedOrder.splice(dropIndex, 0, draggedItem);
 
-      // 新しいorderを設定
+      // 新しいorderを設定しつつ、openItemsも更新(該当のアコーディオン開きアイテムを保持)
       updatedOrder.forEach((item, index) => {
+        const wasOpen = openItems.has(item.order);
         item.order = index;
+        // 順序変更後も開閉状態を保持
+        if (wasOpen) {
+          updatedOpenItems.add(index);
+        } else {
+          updatedOpenItems.delete(index);
+        }
       });
     } else {
       const parentIndex = updatedOrder.findIndex(
@@ -112,17 +129,24 @@ export const List = () => {
       const [draggedSubItem] = subCategoryList.splice(draggedIndex, 1);
       subCategoryList.splice(dropIndex, 0, draggedSubItem);
 
-      //新しいorderを設定
+      // 新しいorderを設定しつつ、openItemsも更新
       updatedOrder[parentIndex].subCategory = subCategoryList;
       updatedOrder[parentIndex].subCategory?.forEach((sub, index) => {
+        const wasOpen = openItems.has(sub.order);
         sub.order = index;
+        if (wasOpen) {
+          updatedOpenItems.add(index);
+        } else {
+          updatedOpenItems.delete(index);
+        }
       });
     }
 
-    // リストの順序を更新
+    // 更新したリストと開閉状態を設定
     setListOrder(updatedOrder);
+    setOpenItems(updatedOpenItems);
 
-    // 入力値を更新するための新しいオブジェクトを生成
+    // 該当のアイテムのinputの値（順番）をorderに基づいて内部的に更新
     const newInputValues: Record<number, string> = {};
     updatedOrder.forEach((item) => {
       newInputValues[item.order] = String(item.order);
@@ -132,15 +156,15 @@ export const List = () => {
         });
       }
     });
-    // 状態を更新
     setInputValues(newInputValues);
 
+    // ドラッグイベント時に使用したidをnullにする
     setDraggedItemId(null);
     setDraggedParentId(null);
     setDragEnterId(null);
   };
 
-  // inputの値
+  // 並べ替え後のinputの値
   const handleInputChange = (id: number, value: string) => {
     setInputValues((prevInputValues) => ({
       ...prevInputValues,
