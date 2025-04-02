@@ -1,4 +1,4 @@
-import React, { MouseEventHandler } from "react";
+import React, { MouseEventHandler, useCallback } from "react";
 import { Button } from "./components/ui/button";
 import SubItem from "./SubItem";
 import { ListItem as ListItemType, SubItem as SubItemType } from "./type";
@@ -13,7 +13,7 @@ type ListItemProps = {
     id: number,
     parentId: number | null
   ) => void;
-  onDragOver: (e: React.DragEvent<HTMLElement>) => void;
+  onDragOver: React.DragEventHandler<HTMLElement>;
   onDrop: (
     e: React.DragEvent<HTMLElement>,
     id: number,
@@ -47,13 +47,19 @@ const ListItem: React.FC<ListItemProps> = ({
   inputValues,
   switchSortable,
 }) => {
+  // useCallbackを使用して関数をメモ化
+  const handleOpenSubClick = useCallback(
+    () => handleOpenSub(item.order, null)(),
+    [item.order, handleOpenSub]
+  );
+
   return (
     <li
       key={item.order}
       id={`${item.category}_${item.order}`}
       draggable={sortable}
       onDragStart={(e) => onDragStart(e, item.order, null)}
-      onDragOver={(e) => onDragOver(e)}
+      onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, item.order, null)}
       onDragEnter={(e) => onDragEnter(e, item.order, null)}
       className={`border p-2 mb-2 ${
@@ -75,7 +81,7 @@ const ListItem: React.FC<ListItemProps> = ({
           <span>
             <Button
               className={item.isOpen ? "bg-purple-600" : "bg-red-600"}
-              onClick={handleOpenSub(item.order, null)}
+              onClick={handleOpenSubClick} // メモ化した関数を使用
             >
               {item.isOpen ? "close" : "open"}
             </Button>
