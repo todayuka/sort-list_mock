@@ -49,7 +49,8 @@ const ListItem: React.FC<ListItemProps> = ({
 }) => {
   // useCallbackを使用して関数をメモ化
   const handleOpenSubClick = useCallback(
-    () => handleOpenSub(item.order, null)(),
+    (e: React.MouseEvent<HTMLButtonElement>) =>
+      handleOpenSub(item.order, null)(e),
     [item.order, handleOpenSub]
   );
 
